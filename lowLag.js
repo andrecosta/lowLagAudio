@@ -53,6 +53,7 @@ var lowLag = new function(){
 				this.load= this.loadSoundWebkitAudio;
 				this.play = this.playSoundWebkitAudio;
 				this.webkitAudioContext = new webkitAudioContext();
+                this.volume = this.volumeWebkitAudio;
 			break;
 			case 'audioTag':
 				this.msg("init audioTag");
@@ -151,6 +152,7 @@ var lowLag = new function(){
 
 	this.webkitAudioContext = undefined;
 	this.webkitAudioBuffers = {};
+    this.gainNodes = {};
 
 	this.loadSoundWebkitAudio = function(urls,tag){
 		var url = lowLag.getSingleURL(urls);
@@ -177,6 +179,11 @@ lowLag.msg('webkitAudio loading '+url+' as tag ' + tag);
 		lowLag.msg("Error loading webkitAudio: "+e);
 	}
 
+    this.volSoundWebkitAudio = function(tag, vol) {
+        var gainNode = lowLag.gainNodes[tag];
+        gainNode.gain.value = vol;
+    }
+    
 	this.playSoundWebkitAudio= function(tag){
 		lowLag.msg("playSoundWebkitAudio "+tag);
 		var buffer = lowLag.webkitAudioBuffers[tag];
@@ -186,8 +193,12 @@ lowLag.msg('webkitAudio loading '+url+' as tag ' + tag);
 		}
 		var context = lowLag.webkitAudioContext;
 		var source = context.createBufferSource(); // creates a sound source
+        var gainNode = this.webkitAudioContext.createGainNode();
 		source.buffer = buffer;                    // tell the source which sound to play
 		source.connect(context.destination);       // connect the source to the context's destination (the speakers)
+        source.connect(gainNode);
+        gainNode.connect(context.destination);
+        lowLag.gainNodes[tag] = gainNode;
 		if (typeof(source.noteOn) == "function") {
 			source.noteOn(0);                          // play the source now, using noteOn
 		} else {
